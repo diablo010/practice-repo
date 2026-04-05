@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Query
+from fastapi import Body, Depends, FastAPI, Query
 from datetime import datetime
 from typing import Annotated, Any
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 class ModelName(str, Enum):
     alexnet = "aaaalllleeexx"
@@ -11,9 +11,30 @@ class ModelName(str, Enum):
 
 class Item(BaseModel):
     name: str
-    description: str | None = None
-    price: float
+    description: str | None = Field(
+        default=None, title="The description of the item", max_length=300
+    )
+    price: float = Field(gt=0, description="The price must be higher than 0")
     tax: float | None = None
+
+class UserIn(BaseModel):
+    username: str
+    password: str
+    email: EmailStr
+    full_name: str | None = None
+
+class UserOut(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None    
+
+class BaseUser(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None
+
+class UserIn(BaseUser):
+    password: str
 
 app = FastAPI()
 
@@ -91,7 +112,55 @@ async def root():
 #         results.update({"q": q})
 #     return results
 
+# @app.get("/items/")
+# async def read_items(q: Annotated[list[str] | None, Query()] = None):
+#     query_items = {"q": q}
+#     return query_items
+
+@app.get("/user/")
+async def read_user(user: UserIn):
+    return user
+
+# @app.get("/items/", response_model=list[Item])
+# async def read_items() -> Any:
+#     return [
+#         Item(name="Portia", price=89),
+#         Item(name="Sophie", price=34.23, tax=10)
+#     ]
+
+# @app.get("/items/", response_model=list[Item])
+# async def read_items() -> Any:
+#     return [
+#         {"name": "Portia", "price": 89},
+#         {"name": "Sophie", "price": 3.23, "tax": 10}
+#     ]
+
+# # Don't do this in production!
+# @app.post("/user/", response_model=UserOut)
+# async def create_user(user: UserIn) -> Any:
+#     return user
+
+# @app.post("/user/")
+# async def create_user(user: UserIn) -> BaseUser:
+#     return user
+
+# @app.put("/items/{item_id}")
+# async def update_item(item_id: int, item: Annotated[Item, Body(embed=True)]):
+#     results = {"item_id": item_id, "item": item}
+#     return results
+
+# # Response Status Code
+# @app.post("/items/", status_code=201)
+# async def create_item(name: str):
+#     return {"name": name}
+
+async def common_parameters(q: str | None = None, skip: int = 0, limit: int = 20):
+    return {"q": q, "skip": skip, "limit": limit}
+
 @app.get("/items/")
-async def read_items(q: Annotated[list[str] | None, Query()] = None):
-    query_items = {"q": q}
-    return query_items
+async def read_items(commons: Annotated[dict, Depends(common_parameters)]):
+    return commons
+
+@app.get("/users/")
+async def read_users(commons: Annotated[dict, Depends(common_parameters)]):
+    return commons
