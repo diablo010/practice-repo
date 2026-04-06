@@ -1,45 +1,71 @@
-from fastapi import Body, Depends, FastAPI, Query
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from datetime import datetime
 from typing import Annotated, Any
 from enum import Enum
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
+from sqlmodel import SQLModel, Session, create_engine, select, Field
 
-class ModelName(str, Enum):
-    alexnet = "aaaalllleeexx"
-    resnet = "rrressssnnneeettt"
-    lenet = "lllleeeennneeettt"
+# class ModelName(str, Enum):
+#     alexnet = "aaaalllleeexx"
+#     resnet = "rrressssnnneeettt"
+#     lenet = "lllleeeennneeettt"
 
-class Item(BaseModel):
-    name: str
-    description: str | None = Field(
-        default=None, title="The description of the item", max_length=300
-    )
-    price: float = Field(gt=0, description="The price must be higher than 0")
-    tax: float | None = None
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = Field(
+#         default=None, title="The description of the item", max_length=300
+#     )
+#     price: float = Field(gt=0, description="The price must be higher than 0")
+#     tax: float | None = None
 
-class UserIn(BaseModel):
-    username: str
-    password: str
-    email: EmailStr
-    full_name: str | None = None
+# class UserIn(BaseModel):
+#     username: str
+#     password: str
+#     email: EmailStr
+#     full_name: str | None = None
 
-class UserOut(BaseModel):
-    username: str
-    email: EmailStr
-    full_name: str | None = None    
+# class UserOut(BaseModel):
+#     username: str
+#     email: EmailStr
+#     full_name: str | None = None    
 
-class BaseUser(BaseModel):
-    username: str
-    email: EmailStr
-    full_name: str | None = None
+# class BaseUser(BaseModel):
+#     username: str
+#     email: EmailStr
+#     full_name: str | None = None
 
-class UserIn(BaseUser):
-    password: str
+# class UserIn(BaseUser):
+#     password: str
+
+class Hero(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    age: int | None = Field(default=None, index=True)
+    secret_name: str
+
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}     # allows to use same db to use different threads
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 app = FastAPI()
 
-fake_items_db = [{"item_name": "Ooh"},
-                 {"item_name": "fahh"}]
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+# fake_items_db = [{"item_name": "Ooh"},
+#                  {"item_name": "fahh"}]
 
 @app.get("/")
 async def root():
@@ -117,10 +143,11 @@ async def root():
 #     query_items = {"q": q}
 #     return query_items
 
-@app.get("/user/")
-async def read_user(user: UserIn):
-    return user
+# @app.get("/user/")
+# async def read_user(user: UserIn):
+#     return user
 
+# # response_model parameter
 # @app.get("/items/", response_model=list[Item])
 # async def read_items() -> Any:
 #     return [
@@ -154,13 +181,47 @@ async def read_user(user: UserIn):
 # async def create_item(name: str):
 #     return {"name": name}
 
-async def common_parameters(q: str | None = None, skip: int = 0, limit: int = 20):
-    return {"q": q, "skip": skip, "limit": limit}
+# # Dependencies
+# async def common_parameters(q: str | None = None, skip: int = 0, limit: int = 20):
+#     return {"q": q, "skip": skip, "limit": limit}
 
-@app.get("/items/")
-async def read_items(commons: Annotated[dict, Depends(common_parameters)]):
-    return commons
+# @app.get("/items/")
+# async def read_items(commons: Annotated[dict, Depends(common_parameters)]):
+#     return commons
 
-@app.get("/users/")
-async def read_users(commons: Annotated[dict, Depends(common_parameters)]):
-    return commons
+# @app.get("/users/")
+# async def read_users(commons: Annotated[dict, Depends(common_parameters)]):
+#     return commons
+
+# SQL (Relational) Databases
+@app.get("/heroes/")
+def read_heroes(
+    session: SessionDep,
+    offset: int = 0,
+    limit: Annotated[int, Query(le=100)] = 100,
+) -> list[Hero]:
+    heroes = session.exec(select(Hero).offset(offset).limit(limit)).all()
+    return heroes
+
+@app.get("/heroes/{hero_id}")
+def read_hero_with_id(hero_id: int, session: SessionDep) -> Hero:
+    hero = session.get(Hero, hero_id)
+    if not hero:
+        raise HTTPException(status_code=404, detail="Hero Not Found")
+    return hero
+
+@app.post("/heroes/", status_code=201)
+async def create_hero(hero: Hero, session: SessionDep) -> Hero:
+    session.add(hero)
+    session.commit()
+    session.refresh(hero)
+    return hero
+
+@app.delete("/heroes/{hero_id}")
+async def delete_hero(hero_id: int, session: SessionDep):
+    hero = session.get(Hero, hero_id)
+    if not hero:
+        raise HTTPException(status_code=404, detail="Hero Not Found")
+    session.delete(hero)
+    session.commit()
+    return {"ok": True}
