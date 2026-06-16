@@ -11,15 +11,15 @@ This system should allow user to:
 - Delete tasks
 
 ## Endpoints
-POST '/tasks': Create a task
-GET '/tasks': List all tasks
-GET '/tasks/{id}': List specific task
-PUT '/tasks/{id}': Update a task
-DELETE '/tasks/{id}': Delete a task
+- POST '/tasks': Create a task
+- GET '/tasks': List all tasks
+- GET '/tasks/{id}': List specific task
+- PUT '/tasks/{id}': Update a task
+- DELETE '/tasks/{id}': Delete a task
 
 ## Data Model
-id - unique identifier
-description - str
-status - str
-created_at - datetime
-updated_at - datetime
+- id - unique identifier
+- description - str
+- status - str
+- created_at - datetime
+- updated_at - datetime
