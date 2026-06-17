@@ -16,29 +16,19 @@ This system should allow users to:
 
 ## Endpoints
 
-### Create Student
-
-* **POST** `/students`
+### POST `/students`
 - Create a new student record.
 
-### List All Students
-
-* **GET** `/students`
+### GET `/students`
 - Retrieve all student records.
 
-### Get Student by ID
-
-* **GET** `/students/{id}`
+### GET `/students/{id}`
 - Retrieve details of a specific student.
 
-### Update Student
-
-* **PUT** `/students/{id}`
+### PUT `/students/{id}`
 - Update an existing student's information.
 
-### Delete Student
-
-* **DELETE** `/students/{id}`
+### DELETE `/students/{id}`
 - Remove a student record.
 
 ## Data Model
@@ -72,3 +62,16 @@ http://127.0.0.1:8000/docs
 ```
 
 to interact with the API using Swagger UI.
+
+### Execution Path
+Route
+↓
+Controller
+↓
+Service
+↓
+Data Storage
+↓
+Controller
+↓
+Response
