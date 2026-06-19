@@ -16,19 +16,19 @@ This system should allow users to:
 
 ## Endpoints
 
-### POST `/students`
+#### POST `/students`
 - Create a new student record.
 
-### GET `/students`
+#### GET `/students`
 - Retrieve all student records.
 
-### GET `/students/{id}`
+#### GET `/students/{id}`
 - Retrieve details of a specific student.
 
-### PUT `/students/{id}`
+#### PUT `/students/{id}`
 - Update an existing student's information.
 
-### DELETE `/students/{id}`
+#### DELETE `/students/{id}`
 - Remove a student record.
 
 ## Data Model
@@ -37,7 +37,9 @@ This system should allow users to:
 | ---------- | -------- | --------------------------------- |
 | id         | int      | Unique identifier for the student |
 | name       | string   | Student name                      |
+| username   | string   | Student username                  |
 | age        | int      | Student age                       |
+| email      | email string| Student                        |
 | description| string   | Student description               |
 
 ## Features

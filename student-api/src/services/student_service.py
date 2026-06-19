@@ -1,29 +1,65 @@
 # contains the CRUD logic
 
-students = []
+from sqlmodel import select
+from models.schemas import BaseStudent, StudentOut
 
-def create_student(student):
-    students.append(student)
+
+def create_student(student, session):
+    
+    db_student = BaseStudent(
+        name=student.name,
+        age=student.age,
+        email=student.email,
+        description=student.description,
+        username=student.username,
+        password=student.password
+    )
+
+    session.add(db_student)
+    session.commit()
+    session.refresh(db_student)
+
+    return db_student
+
+def get_students(session):
+    return session.exec(select(BaseStudent)).all()
+
+def get_student(student_id: int, session):
+    statement = select(BaseStudent).where(
+        BaseStudent.id == student_id
+    )
+
+    return session.exec(statement).first()
+
+def update_student(student_id: int, updated_student, session):
+
+    student = session.get(BaseStudent, student_id)
+
+    if not student:
+        return None
+
+    student.name = updated_student.name
+    student.age = updated_student.age
+    student.email = updated_student.email
+    student.description = updated_student.description
+    student.username = updated_student.username
+    student.password = updated_student.password
+
+    session.add(student)
+    session.commit()
+    session.refresh(student)
+
     return student
 
-def get_students():
-    return students
+def delete_student(student_id: int, session):
+    student = session.get(BaseStudent, student_id)
 
-def get_student(student_id: int):
-    for student in students:
-        if student.id == student_id:
-            return student
-    return None
+    if not student:
+        return None
 
-def update_student(student_id: int, updated_student):
-    for i, student in enumerate(students):
-        if student.id == student_id:
-            students[i] = updated_student
-            return updated_student
-    return None
-
-def delete_student(student_id: int):
-    for i, student in enumerate(students):
-        if student.id == student_id:
-            students.pop(i)
-    return None
+    deleted_student = StudentOut(id=student.id, name=student.name)
+    
+    session.delete(student)
+    session.commit()
+    
+    return deleted_student
